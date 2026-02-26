@@ -36,18 +36,28 @@ def check_message_pattern(text: str) -> bool:
     Проверяет, соответствует ли сообщение нужному паттерну.
     
     Паттерны:
-    1. Товары с эмодзи [xN] в стоке + "Сток HH:MM по МСК"
-    2. Инструменты с эмодзи [xN] в стоке + "Сток HH:MM по МСК"
+    - Время и дата: 🕒 HH:MM (МСК) | 🗓️ DD.MM.YYYY
+    - Маркер: 🚨 РЕДКИЙ ТОВАР! 👀
+    - Категория: ⚙️ ИНСТРУМЕНТЫ или 🌱 СЕМЕНА (и другие)
+    - Товар с количеством: [N шт.]
     """
     if not text:
         return False
     
-    # Проверяем наличие ключевых элементов
-    has_items_in_stock = bool(re.search(r'\[x\d+\]\s+в стоке', text))
-    has_time_pattern = bool(re.search(r'Сток\s+\d{1,2}:\d{2}\s+по\s+МСК', text))
+    # Проверяем наличие времени в формате 🕒 HH:MM (МСК)
+    has_time = bool(re.search(r'🕒\s*\d{1,2}:\d{2}\s*\(МСК\)', text))
     
-    # Сообщение должно содержать и товары в стоке, и время
-    return has_items_in_stock and has_time_pattern
+    # Проверяем наличие даты в формате 🗓️ DD.MM.YYYY
+    has_date = bool(re.search(r'🗓️\s*\d{2}\.\d{2}\.\d{4}', text))
+    
+    # Проверяем наличие маркера "РЕДКИЙ ТОВАР"
+    has_rare_marker = '🚨 РЕДКИЙ ТОВАР!' in text or 'РЕДКИЙ ТОВАР' in text
+    
+    # Проверяем наличие товара с количеством в формате [N шт.]
+    has_item_count = bool(re.search(r'\[\d+\s+шт\.\]', text))
+    
+    # Сообщение должно содержать все ключевые элементы
+    return has_time and has_date and has_rare_marker and has_item_count
 
 
 @dp.channel_post()
