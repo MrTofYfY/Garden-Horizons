@@ -1,59 +1,43 @@
 #!/bin/sh
+# Goosembler Universal Installer
 
-# Ссылка на твой бинарник
 URL="https://github.com/MrTofYfY/EpstinVPN/raw/refs/heads/main/Linux/gsm"
-
-# Временный файл в домашней директории
-TMP_FILE="$HOME/.gsm_temp_bin"
+# Скачиваем прямо в домашнюю папку пользователя
+DEST="$HOME/gsm"
 
 echo "--- Начинаю установку Goosembler ---"
 
-# 1. Определяем среду
-if [ -n "$PREFIX" ]; then
-    echo "[*] Обнаружен Termux"
-    INSTALL_DIR="$PREFIX/bin"
-else
-    echo "[*] Обнаружен Linux"
-    INSTALL_DIR="/usr/local/bin"
-fi
+# 1. Скачивание
+echo "[*] Скачивание файла..."
+curl -L "$URL" -o "$DEST"
 
-# 2. Скачивание
-echo "[*] Скачивание..."
-curl -L "$URL" -o "$TMP_FILE"
-
-# Проверка, скачался ли файл
-if [ ! -s "$TMP_FILE" ]; then
-    echo "[!] Ошибка: Не удалось скачать файл (файл пуст или отсутствует)."
-    rm -f "$TMP_FILE"
+# Проверка
+if [ ! -f "$DEST" ]; then
+    echo "[!] Ошибка: Файл не скачался!"
     exit 1
 fi
 
-# 3. Делаем исполняемым
-chmod +x "$TMP_FILE"
+# 2. Права
+chmod +x "$DEST"
 
-# 4. Установка (с попыткой использования sudo)
-echo "[*] Установка в $INSTALL_DIR..."
-
-if [ -w "$INSTALL_DIR" ]; then
-    # Если есть права на запись в папку, просто перемещаем
-    mv "$TMP_FILE" "$INSTALL_DIR/gsm"
+# 3. Перемещение
+# Определяем, куда ставить
+if [ -n "$PREFIX" ]; then
+    # Это Termux, ставим в $PREFIX/bin (он доступен для выполнения)
+    INSTALL_DIR="$PREFIX/bin"
 else
-    # Если прав нет, пробуем sudo
-    if command -v sudo >/dev/null 2>&1; then
-        sudo mv "$TMP_FILE" "$INSTALL_DIR/gsm"
-    else
-        echo "[!] Ошибка: Нет прав на запись в $INSTALL_DIR и отсутствует sudo."
-        echo "Попробуй запустить с правами root или проверь пути."
-        rm -f "$TMP_FILE"
-        exit 1
-    fi
+    # Это обычный Linux
+    INSTALL_DIR="/usr/local/bin"
 fi
 
-# 5. Проверка успешности
+echo "[*] Перемещение в $INSTALL_DIR..."
+mv "$DEST" "$INSTALL_DIR/gsm"
+
+# Финал
 if [ -f "$INSTALL_DIR/gsm" ]; then
-    echo "[+] Успешно! Goosembler установлен."
-    echo "[+] Введи 'gsm' для проверки."
+    echo "[+] Успешно! Установлено в $INSTALL_DIR/gsm"
+    echo "[+] Введи 'gsm', чтобы запустить."
 else
-    echo "[!] Ошибка при установке."
+    echo "[!] Ошибка: не удалось переместить файл."
     exit 1
 fi
