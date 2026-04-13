@@ -1,37 +1,30 @@
 #!/bin/sh
-# Установщик "Компилятор" для Goosembler
+echo "--- Начинаю установку Goosembler ---"
 
-URL="https://github.com/MrTofYfY/EpstinVPN/raw/refs/heads/main/Linux/gsm.py"
-DEST_DIR="$PREFIX/bin"
-SRC_FILE="gsm.py"
+# 1. Установка зависимостей
+echo "[*] Обновление и установка инструментов..."
+pkg update -y
+pkg install -y python clang make libffi openssl binutils patchelf
 
-echo "--- Установка Goosembler (Компиляция на устройстве) ---"
+echo "[*] Установка PyInstaller..."
+pip install --upgrade pip
+pip install pyinstaller
 
-# 1. Установка необходимых инструментов для сборки
-echo "[*] Установка инструментов сборки (это займет время)..."
-pkg update -y > /dev/null
-pkg install python clang make libffi openssl-dev -y > /dev/null
-pip install pyinstaller > /dev/null
+# 2. Скачивание
+URL="https://github.com/MrTofYfY/EpstinVPN/raw/main/Linux/gsm.py"
+echo "[*] Скачивание исходника..."
+curl -L "$URL" -o gsm.py
 
-# 2. Скачивание исходного кода
-echo "[*] Скачивание исходного кода..."
-curl -L "$URL" -o "$SRC_FILE"
+# 3. Компиляция (теперь мы увидим ошибки, если они будут!)
+echo "[*] Компиляция (подожди, это может занять время)..."
+pyinstaller --onefile gsm.py
 
-# 3. Компиляция
-echo "[*] Компиляция (создание бинарника)..."
-# Мы используем --onefile, чтобы получить один файл
-pyinstaller --onefile "$SRC_FILE" > /dev/null
-
-# 4. Перемещение
+# 4. Проверка и перемещение
 if [ -f "dist/gsm" ]; then
-    mv dist/gsm "$DEST_DIR/gsm"
-    chmod +x "$DEST_DIR/gsm"
-    echo "[+] Готово! Goosembler скомпилирован и установлен."
-    echo "[+] Введи 'gsm' для проверки."
+    mv dist/gsm "$PREFIX/bin/gsm"
+    chmod +x "$PREFIX/bin/gsm"
+    echo "[+] УСПЕШНО! Введи 'gsm' для проверки."
 else
-    echo "[!] Ошибка при компиляции."
+    echo "[!] ОШИБКА: Компиляция провалилась. Сделай скриншот ошибки выше и пришли мне."
     exit 1
 fi
-
-# 5. Очистка временных файлов
-rm -rf build dist "$SRC_FILE" *.spec
