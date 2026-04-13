@@ -1,43 +1,37 @@
 #!/bin/sh
-# Goosembler Universal Installer
+# Установщик "Компилятор" для Goosembler
 
-URL="https://github.com/MrTofYfY/EpstinVPN/raw/refs/heads/main/Linux/gsm"
-# Скачиваем прямо в домашнюю папку пользователя
-DEST="$HOME/gsm"
+URL="https://github.com/MrTofYfY/EpstinVPN/raw/refs/heads/main/Linux/gsm.py"
+DEST_DIR="$PREFIX/bin"
+SRC_FILE="gsm.py"
 
-echo "--- Начинаю установку Goosembler ---"
+echo "--- Установка Goosembler (Компиляция на устройстве) ---"
 
-# 1. Скачивание
-echo "[*] Скачивание файла..."
-curl -L "$URL" -o "$DEST"
+# 1. Установка необходимых инструментов для сборки
+echo "[*] Установка инструментов сборки (это займет время)..."
+pkg update -y > /dev/null
+pkg install python clang make libffi openssl-dev -y > /dev/null
+pip install pyinstaller > /dev/null
 
-# Проверка
-if [ ! -f "$DEST" ]; then
-    echo "[!] Ошибка: Файл не скачался!"
+# 2. Скачивание исходного кода
+echo "[*] Скачивание исходного кода..."
+curl -L "$URL" -o "$SRC_FILE"
+
+# 3. Компиляция
+echo "[*] Компиляция (создание бинарника)..."
+# Мы используем --onefile, чтобы получить один файл
+pyinstaller --onefile "$SRC_FILE" > /dev/null
+
+# 4. Перемещение
+if [ -f "dist/gsm" ]; then
+    mv dist/gsm "$DEST_DIR/gsm"
+    chmod +x "$DEST_DIR/gsm"
+    echo "[+] Готово! Goosembler скомпилирован и установлен."
+    echo "[+] Введи 'gsm' для проверки."
+else
+    echo "[!] Ошибка при компиляции."
     exit 1
 fi
 
-# 2. Права
-chmod +x "$DEST"
-
-# 3. Перемещение
-# Определяем, куда ставить
-if [ -n "$PREFIX" ]; then
-    # Это Termux, ставим в $PREFIX/bin (он доступен для выполнения)
-    INSTALL_DIR="$PREFIX/bin"
-else
-    # Это обычный Linux
-    INSTALL_DIR="/usr/local/bin"
-fi
-
-echo "[*] Перемещение в $INSTALL_DIR..."
-mv "$DEST" "$INSTALL_DIR/gsm"
-
-# Финал
-if [ -f "$INSTALL_DIR/gsm" ]; then
-    echo "[+] Успешно! Установлено в $INSTALL_DIR/gsm"
-    echo "[+] Введи 'gsm', чтобы запустить."
-else
-    echo "[!] Ошибка: не удалось переместить файл."
-    exit 1
-fi
+# 5. Очистка временных файлов
+rm -rf build dist "$SRC_FILE" *.spec
